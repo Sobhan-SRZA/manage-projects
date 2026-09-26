@@ -1,10 +1,8 @@
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { PrismaClient } from "@prisma/client/extension";
 import { betterAuth } from "better-auth";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/prisma/prisma";
 
 export const auth = betterAuth({
     database: prismaAdapter(prisma, {
