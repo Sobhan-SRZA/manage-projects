@@ -11,8 +11,8 @@ import {
     Avatar,
     AvatarFallback
 } from "./ui/avatar";
+import { CodeXmlIcon } from "lucide-react";
 import { useSession } from "@/lib/auth/auth-client";
-import { Briefcase } from "lucide-react";
 import { Button } from "./ui/button";
 import SignOutButton from "./signout-btn";
 import Link from "next/link";
@@ -24,8 +24,8 @@ export default function Navbar() {
         <nav className="border-b border-gray-200 bg-white">
             <div className="container mx-auto flex h-16 items-center px-4 justify-between">
                 <Link href="/" className="flex items-center gap-2 text-xl font-semibold text-primary">
-                    <Briefcase />
-                    Job Tracker
+                    <CodeXmlIcon />
+                    Projects manager
                 </Link>
 
                 <div className="flex items-center gap-4">
