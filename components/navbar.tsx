@@ -12,14 +12,14 @@ import {
     AvatarFallback
 } from "./ui/avatar";
 import { CodeXmlIcon } from "lucide-react";
-import { useSession } from "@/lib/auth/auth-client";
+import { useSession } from "next-auth/react";
 import { Button } from "./ui/button";
 import SignOutButton from "./signout-btn";
 import Link from "next/link";
 
 export default function Navbar() {
     const { data: session } = useSession();
-
+    
     return (
         <nav className="border-b border-gray-200 bg-white">
             <div className="container mx-auto flex h-16 items-center px-4 justify-between">
@@ -50,7 +50,7 @@ export default function Navbar() {
                                         >
                                             <Avatar className="size-8">
                                                 <AvatarFallback className="bg-primary text-white">
-                                                    {session.user.name[0].toUpperCase()}
+                                                    {session.user.name![0].toUpperCase()}
                                                 </AvatarFallback>
                                             </Avatar>
                                         </Button>
