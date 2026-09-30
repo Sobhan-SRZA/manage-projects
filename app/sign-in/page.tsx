@@ -6,18 +6,18 @@ import {
   CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
+import { AuthError } from "next-auth";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { signIn } from "@/lib/auth/auth-client";
+import { signIn } from "next-auth/react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 
 export default function SignIn() {
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -33,25 +33,38 @@ export default function SignIn() {
     setLoading(true);
 
     try {
-      const result = await signIn.email({
+      const result = await signIn("credentials", {
         email,
-        password
-      })
+        password,
+        redirect: false
+      });
 
-      if (result.error) {
-        setError(result.error.message ?? "Failed to sign up")
+      if (result?.error) {
+        setError("Invalid email or password");
+
+        return;
       }
 
-      else {
-        router.push("/dashboard")
-      }
+      router.push("/dashboard");
+      router.refresh();
     }
 
     catch (e) {
-      setError("An unexpected error occurred")
-    }
+      if (e instanceof AuthError) {
+        switch (e.type) {
+          case "CredentialsSignin":
+            setError("Invalid email or password");
+            break;
 
-    finally {
+          default:
+            setError("Something went wrong. Please try again.");
+        }
+      }
+
+      else {
+        setError("An unexpected error occurred");
+      }
+    } finally {
       setLoading(false);
     }
   }
@@ -69,10 +82,7 @@ export default function SignIn() {
           </CardDescription>
         </CardHeader>
 
-        <form
-          className="space-y-4"
-          onSubmit={handleSubmit}
-        >
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             {error && (
               <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
@@ -93,6 +103,7 @@ export default function SignIn() {
                 className="border-gray-300 focus:border-primary focus:ring-primary"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
               />
             </div>
 
@@ -110,6 +121,7 @@ export default function SignIn() {
                 className="border-gray-300 focus:border-primary focus:ring-primary"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
               />
             </div>
           </CardContent>
@@ -124,8 +136,7 @@ export default function SignIn() {
             </Button>
 
             <p className="text-center text-sm text-gray-600">
-              Don't have an account?{" "}
-
+              Don&apos;t have an account?{" "}
               <Link
                 href="/sign-up"
                 className="font-medium text-primary hover:underline"
@@ -137,5 +148,5 @@ export default function SignIn() {
         </form>
       </Card>
     </div>
-  )
+  );
 }
