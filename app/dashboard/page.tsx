@@ -1,4 +1,4 @@
-import { getSession } from "@/lib/auth/auth";
+import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
