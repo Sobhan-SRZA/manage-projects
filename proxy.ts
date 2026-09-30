@@ -1,17 +1,27 @@
-import {
-    NextRequest,
-    NextResponse
-} from "next/server";
-import { getSession } from "./lib/auth/auth";
+import { NextResponse } from "next/server";
+import { auth } from "./lib/auth/auth";
 
-export default async function proxy(request: NextRequest) {
-    const session = await getSession();
+export default auth((req) => {
+    const session = req.auth;
+    const pathname = req.nextUrl.pathname;
 
-    const isSignInPage = request.nextUrl.pathname.startsWith("/sign-in");
-    const isSignUpPage = request.nextUrl.pathname.startsWith("/sign-up");
-    if ((isSignInPage || isSignUpPage) && session?.user) {
-        return NextResponse.redirect(new URL("/dashboard", request.url))
+    const isAuthPage = pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
+
+    const isDashboard = pathname.startsWith("/dashboard");
+
+    // اگه لاگین کرده و میخواد بره صفحه auth → بفرست dashboard
+    if (isAuthPage && session?.user) {
+        return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
+
+    // اگه لاگین نکرده و میخواد بره dashboard → بفرست sign-in
+    if (isDashboard && !session?.user) {
+        return NextResponse.redirect(new URL("/sign-in", req.url));
     }
 
     return NextResponse.next();
-}
+});
+
+export const config = {
+    matcher: ["/dashboard/:path*", "/sign-in", "/sign-up"],
+};
