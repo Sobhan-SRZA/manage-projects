@@ -6,15 +6,16 @@ import {
     CardDescription,
     CardFooter,
     CardHeader,
-    CardTitle
+    CardTitle,
 } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
-import { signUp } from "@/lib/auth/auth-client";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
+import { registerUser } from "./actions";
 
 export default function SignUp() {
     const [name, setName] = useState("");
@@ -25,6 +26,7 @@ export default function SignUp() {
     const [loading, setLoading] = useState(false);
 
     const router = useRouter();
+    const [, startTransition] = useTransition();
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -33,26 +35,35 @@ export default function SignUp() {
         setLoading(true);
 
         try {
-            const result = await signUp.email({
+            // ۱. ساخت کاربر در دیتابیس
+            const result = await registerUser(name, email, password);
+
+            if (!result.success) {
+                setError(result.error);
+                return;
+            }
+
+            // ۲. لاگین خودکار با credentials
+            const signInResult = await signIn("credentials", {
                 email,
-                name,
-                password
-            })
+                password,
+                redirect: false,
+            });
 
-            if (result.error) {
-                setError(result.error.message ?? "Failed to sign up")
+            if (signInResult?.error) {
+                setError("Account created but sign-in failed. Please sign in manually.");
+                return;
             }
 
-            else {
-                router.push("/dashboard")
-            }
-        }
-
-        catch (e) {
-            setError("An unexpected error occurred")
-        }
-
-        finally {
+            // ۳. رفتن به داشبورد
+            startTransition(() => {
+                router.push("/dashboard");
+                router.refresh();
+            });
+        } catch (err) {
+            console.error(err);
+            setError("An unexpected error occurred");
+        } finally {
             setLoading(false);
         }
     }
@@ -70,10 +81,7 @@ export default function SignUp() {
                     </CardDescription>
                 </CardHeader>
 
-                <form
-                    className="space-y-4"
-                    onSubmit={handleSubmit}
-                >
+                <form className="space-y-4" onSubmit={handleSubmit}>
                     <CardContent className="space-y-4">
                         {error && (
                             <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
@@ -94,6 +102,7 @@ export default function SignUp() {
                                 className="border-gray-300 focus:border-primary focus:ring-primary"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
+                                autoComplete="name"
                             />
                         </div>
 
@@ -110,6 +119,7 @@ export default function SignUp() {
                                 className="border-gray-300 focus:border-primary focus:ring-primary"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
+                                autoComplete="email"
                             />
                         </div>
 
@@ -127,6 +137,7 @@ export default function SignUp() {
                                 className="border-gray-300 focus:border-primary focus:ring-primary"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
+                                autoComplete="new-password"
                             />
                         </div>
                     </CardContent>
@@ -142,7 +153,6 @@ export default function SignUp() {
 
                         <p className="text-center text-sm text-gray-600">
                             Already have an account?{" "}
-
                             <Link
                                 href="/sign-in"
                                 className="font-medium text-primary hover:underline"
@@ -154,5 +164,5 @@ export default function SignUp() {
                 </form>
             </Card>
         </div>
-    )
+    );
 }
