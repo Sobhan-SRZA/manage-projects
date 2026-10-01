@@ -8,14 +8,17 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import {
+    useState,
+    useTransition
+} from "react";
+import { registerUser } from "./actions";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
-import { signIn } from "next-auth/react";
-import { registerUser } from "./actions";
 
 export default function SignUp() {
     const [name, setName] = useState("");
