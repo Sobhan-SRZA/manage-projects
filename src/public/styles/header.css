@@ -1,0 +1,36 @@
+/* تنظیمات پایه برای هدر */
+.header {
+    background: rgba(20, 20, 20, 0.9);
+    /* کمی شفافیت */
+    backdrop-filter: blur(10px);
+    /* افکت مات مدرن */
+    position: sticky;
+    top: 0;
+    width: 100%;
+    margin-bottom: 2rem;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+}
+
+.nav-ul {
+    display: flex;
+    justify-content: center;
+    gap: 2.5rem;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+
+/* استایل حالت Active */
+.nav-ul li.active a {
+    color: #00ffff;
+    cursor: default;
+}
+
+.nav-ul li.active a::after {
+    width: 100%;
+    background: #00ffff;
+}
