@@ -1,0 +1,50 @@
+<div class="dialogErrorBack" style="display: none;"></div>
+<dialog class="errorDialog">
+    <button class="close" onclick="closeDialog(event)">❌</button>
+    <h2 id="title"></h2>
+    <p id="message"></p>
+</dialog>
+
+<script>
+    const dialog_bg = document.querySelector(".dialogErrorBack");
+    const dialog = document.querySelector(".errorDialog");
+
+    const openDialogError = (title, message) => {
+        dialog_bg.style.display = "block";
+        dialog.open = "true";
+        dialog.querySelector("#title").innerText = title;
+        dialog.querySelector("#message").innerText = message;
+
+        return;
+    }
+
+    const closeDialogError = () => {
+        dialog_bg.style.display = "none";
+        dialog.open = null;
+
+        return;
+    }
+
+    document.addEventListener("click", async (e) => {
+        const isDialog =
+            dialog.isEqualNode(e.target)
+            || dialog.childNodes
+                .values()
+                .toArray()
+                .includes(e.target);
+
+        if (dialog.open) {
+            if (!isDialog)
+                closeDialogError();
+        }
+    })
+
+    document.addEventListener("keydown", async (e) => {
+        if (dialog.open) {
+            if (e.key === "Escape")
+                closeDialogError();
+        }
+    })
+
+    const closeDialog = (e) => closeDialogError();
+</script>
