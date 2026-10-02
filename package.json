@@ -1,0 +1,23 @@
+{
+  "name": "manage-projects",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "npm run build & node .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sobhan-SRZA/manage-projects.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Sobhan-SRZA/manage-projects/issues"
+  },
+  "homepage": "https://github.com/Sobhan-SRZA/manage-projects#readme"
+}
