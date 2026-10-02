@@ -19,5 +19,15 @@
   "bugs": {
     "url": "https://github.com/Sobhan-SRZA/manage-projects/issues"
   },
-  "homepage": "https://github.com/Sobhan-SRZA/manage-projects#readme"
+  "homepage": "https://github.com/Sobhan-SRZA/manage-projects#readme",
+  "dependencies": {
+    "@persian-caesar/snowflake-id": "^1.4.0",
+    "dotenv": "^18.0.5",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.4",
+    "typescript": "^7.0.2"
+  }
 }
