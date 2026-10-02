@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="/header/styles.css">
+
+<header class="header">
+    <nav class="h-nav">
+        <ul class="nav-ul">
+            <li><a href="/">Home</a></li>
+            <li><a href="/contact">Contact</a></li>
+        </ul>
+    </nav>
+</header>
+
+<script>
+    const nav_list = document.querySelectorAll(".nav-ul li");
+    const address = location.pathname;
+    nav_list.forEach(list => {
+        const list_link = list.querySelector("a");
+        if (list_link.pathname === address) {
+            list.classList.toggle("active")
+        }
+    })
+</script>
