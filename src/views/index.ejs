@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="styles/index.css">
+    <title>Document</title>
+</head>
+
+<body>
+    <%- include("components/header") %>
+    <%- include("components/dialogError") %>
+
+    <!-- login section -->
+    <section class="container">
+        <h2>سرویس چت ساده</h2>
+        <div class="is-login" style="display: none;">
+            <div id="userInfo" style="display: none;">
+                <h3>اطلاعات کاربر:</h3>
+                <p><strong>شناسه کاربر:</strong> <span id="userId"></span></p>
+                <p><strong>نام کاربری:</strong> <span id="usernameDisplay"></span></p>
+                <p><strong>تاریخ ساخت حساب:</strong> <span id="createdAt"></span></p>
+            </div>
+
+            <button class="btn logout" onclick="logoutProfile()">خروج</button>
+        </div>
+
+        <div class="not-login">
+            <%- include("components/profile-form") %>
+        </div>
+    </section>
+
+    <!-- other section like contact -->
+    <section class="container"> 
+        <a class="contact" href="/contact">Contact with us</a>
+    </section>
+</body>
+
+<script src="/index.js"></script>
+
+</html>
