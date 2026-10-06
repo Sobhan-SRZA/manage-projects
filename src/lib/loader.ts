@@ -21,15 +21,18 @@ export default async function loadRoutes(
         // Load JavaScript route files
         if (
             entry.isFile() &&
-            entry.name.endsWith(".js")
+            (
+                entry.name.endsWith(".js") ||
+                entry.name.endsWith(".ts")
+            )
         ) {
             const module = await import(
                 pathToFileURL(fullPath).href
             );
 
-            const handle = module.default ?? module;
+            const router = entry.name.endsWith(".ts") ? module.default : module.default.default;
 
-            if (!handle) {
+            if (!router) {
                 console.warn(
                     `No default export found: ${fullPath}`
                 );
@@ -37,7 +40,10 @@ export default async function loadRoutes(
                 continue;
             }
 
-            handle(app);
+            app.use(
+                prefix || "/",
+                router
+            );
 
             console.log(
                 `Loaded route: ${prefix || "/"}`
