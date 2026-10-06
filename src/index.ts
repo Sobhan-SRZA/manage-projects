@@ -41,9 +41,11 @@ Promise.all(
 )
 
 // Redirect all invalid URLs to /404
-// app.get("/{*splat}", (req, res) => {
-//     res.redirect("/404");
-// });
+setTimeout(() => {
+    app.use((req, res) => {
+        res.redirect("/api/404");
+    });
+}, 1000);
 
 app.listen(port, () => {
     console.log(
