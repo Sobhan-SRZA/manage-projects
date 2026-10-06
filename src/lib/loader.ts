@@ -27,9 +27,9 @@ export default async function loadRoutes(
                 pathToFileURL(fullPath).href
             );
 
-            const router = module.default ?? module;
+            const handle = module.default ?? module;
 
-            if (!router) {
+            if (!handle) {
                 console.warn(
                     `No default export found: ${fullPath}`
                 );
@@ -37,10 +37,7 @@ export default async function loadRoutes(
                 continue;
             }
 
-            app.use(
-                prefix || "/",
-                router
-            );
+            handle(app);
 
             console.log(
                 `Loaded route: ${prefix || "/"}`
