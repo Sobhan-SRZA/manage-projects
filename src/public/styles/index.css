@@ -102,3 +102,68 @@ a::after {
 a:hover::after {
     width: 100%;
 }
+
+/* ---------- Home hero section ---------- */
+.hero {
+    max-width: 600px;
+    margin: 3rem auto;
+    text-align: center;
+}
+
+.hero-title {
+    font-size: 1.8rem;
+    color: #fff;
+    margin-bottom: 12px;
+}
+
+.hero-sub {
+    color: #999;
+    font-size: 1rem;
+    margin-bottom: 28px;
+    line-height: 1.6;
+}
+
+.hero-actions {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.btn-primary,
+.btn-outline {
+    display: inline-block;
+    padding: 12px 32px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    min-width: 120px;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+    color: #fff;
+}
+
+.btn-primary::after,
+.btn-outline::after {
+    display: none;
+}
+
+.btn-outline {
+    background-color: transparent;
+    color: #6ebbff;
+    border: 2px solid #6ebbff;
+}
+
+.btn-outline:hover {
+    background-color: #6ebbff;
+    color: #000;
+}
