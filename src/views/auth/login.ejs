@@ -10,8 +10,8 @@
 </head>
 
 <body>
-    <%- include("components/header") %>
-        <%- include("components/dialogError") %>
+    <%- include("../components/header") %>
+        <%- include("../components/dialogError") %>
 
             <section class="container auth">
                 <div class="auth-card">
@@ -19,7 +19,7 @@
                     <h2 class="auth-title">خوش آمدید 👋</h2>
                     <p class="auth-sub">برای ادامه وارد حساب خود شوید</p>
 
-                    <form class="auth-form" id="loginForm" action="/login" method="POST">
+                    <form class="auth-form" id="loginForm" action="/api/auth/login" method="POST">
 
                         <div class="field">
                             <label for="login-identifier">ایمیل یا نام کاربری</label>
@@ -48,14 +48,14 @@
                                 <input type="checkbox" name="remember">
                                 <span>مرا به خاطر بسپار</span>
                             </label>
-                            <a href="/forgot-password" class="auth-link">فراموشی رمز؟</a>
+                            <a href="/auth/forgot-password" class="auth-link">فراموشی رمز؟</a>
                         </div>
 
                         <button type="submit" class="auth-btn">ورود</button>
 
                         <p class="auth-foot">
                             حساب نداری؟
-                            <a href="/register" class="auth-link">ثبت نام کن</a>
+                            <a href="/auth/register" class="auth-link">ثبت نام کن</a>
                         </p>
                     </form>
 
