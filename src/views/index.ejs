@@ -4,26 +4,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <link rel="stylesheet" href="/styles/index.css">
     <title>Document</title>
 </head>
 
 <body>
     <%- include("components/header") %>
-    <%- include("components/dialogError") %>
+        <%- include("components/dialogError") %>
 
-    <!-- login section -->
-    <section class="container">
-Lorem ipsum dolor, sit amet consectetur adipisicing elit. Voluptas rem soluta repellat nam iure adipisci quasi, odit debitis, labore dolor illo ab at minima reiciendis omnis, quia incidunt aut impedit?
-    </section>
+            <!-- hero / welcome section -->
+            <section class="container hero">
+                <h1 class="hero-title">به سایت ما خوش آمدید</h1>
+                <p class="hero-sub">برای استفاده از امکانات، وارد حساب خود شوید یا ثبت نام کنید.</p>
 
-    <!-- other section like contact -->
-    <section class="container"> 
-        <a class="contact" href="/contact">Contact with us</a>
-    </section>
+                <div class="hero-actions">
+                    <a class="btn-primary" href="/login">ورود</a>
+                    <a class="btn-outline" href="/register">ثبت نام</a>
+                </div>
+            </section>
+
+            <!-- other section like contact -->
+            <section class="container">
+                <a class="contact" href="/contact">Contact with us</a>
+            </section>
 </body>
 
-<script src="/index.js"></script>
+<script src="/js/index.js"></script>
 
 </html>
