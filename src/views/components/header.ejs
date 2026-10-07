@@ -1,178 +1,190 @@
 <link rel="stylesheet" href="/styles/header.css">
 
 <header class="header">
-    <nav class="h-nav">
-        <ul class="nav-ul">
-            <li><a href="/">Home</a></li>
-            <li><a href="/contact">Contact</a></li>
-        </ul>
-    </nav>
+  <nav class="h-nav">
+    <ul class="nav-ul">
+      <li><a href="/">Home</a></li>
+      <li><a href="/contact">Contact</a></li>
+    </ul>
+  </nav>
 
-    <!-- AUTH AREA: switches between guest buttons and profile -->
-    <div class="auth-area" id="authArea">
-        <!-- guests -->
-        <div class="auth-guests" id="authGuests">
-            <a href="/auth/login" class="nav-btn nav-btn-outline">ورود</a>
-            <a href="/auth/register" class="nav-btn nav-btn-primary">ثبت نام</a>
-        </div>
-
-        <!-- logged-in user -->
-        <div class="auth-profile" id="authProfile" style="display: none;">
-            <button type="button" class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
-                <span class="profile-avatar" id="profileAvatar">U</span>
-                <span class="profile-name" id="profileName">User</span>
-                <svg class="profile-caret" viewBox="0 0 24 24" width="14" height="14" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-            </button>
-
-            <div class="profile-menu" id="profileMenu">
-                <a href="/profile" class="profile-menu-item">پروفایل من</a>
-                <a href="/settings" class="profile-menu-item">تنظیمات</a>
-                <div class="profile-menu-divider"></div>
-                <button type="button" class="profile-menu-item logout" id="logoutBtn">خروج</button>
-            </div>
-        </div>
+  <!-- AUTH AREA: switches between guest buttons and profile -->
+  <div class="auth-area" id="authArea">
+    <!-- guests -->
+    <div class="auth-guests" id="authGuests">
+      <a href="/auth/login" class="nav-btn nav-btn-outline">ورود</a>
+      <a href="/auth/register" class="nav-btn nav-btn-primary">ثبت نام</a>
     </div>
+
+    <!-- logged-in user -->
+    <div class="auth-profile" id="authProfile" style="display: none;">
+      <button type="button" class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
+        <span class="profile-avatar" id="profileAvatar">U</span>
+        <span class="profile-name" id="profileName">User</span>
+        <svg class="profile-caret" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+
+      <div class="profile-menu" id="profileMenu">
+        <a href="/profile" class="profile-menu-item">پروفایل من</a>
+        <a href="/settings" class="profile-menu-item">تنظیمات</a>
+        <div class="profile-menu-divider"></div>
+        <button type="button" class="profile-menu-item logout" id="logoutBtn">خروج</button>
+      </div>
+    </div>
+  </div>
 </header>
 
 <script>
-    /* ---------------- Active nav link ---------------- */
-    const nav_list = document.querySelectorAll(".nav-ul li");
-    const address = location.pathname;
-    nav_list.forEach(list => {
-        const list_link = list.querySelector("a");
-        if (list_link.pathname === address) {
-            list.classList.toggle("active");
-        }
+  /* ---------------- Active nav link ---------------- */
+  const nav_list = document.querySelectorAll(".nav-ul li");
+  const address = location.pathname;
+  nav_list.forEach(list => {
+    const list_link = list.querySelector("a");
+    if (list_link.pathname === address) {
+      list.classList.toggle("active");
+    }
+  });
+
+  /* ---------------- Fake auth logic ---------------- */
+  (function() {
+    // --- fake helpers (swap with real API later) ---
+    const FAKE_USER_COOKIE = "fakeUser";
+
+    function getFakeUser() {
+      const raw = document.cookie
+        .split("; ")
+        .find(row => row.startsWith(FAKE_USER_COOKIE + "="));
+
+      if (!raw)
+        return null;
+
+      try {
+        return JSON.parse(decodeURIComponent(raw.split("=")[1]));
+      } catch {
+        return null;
+      }
+    }
+
+    function setFakeUser(user) {
+      const value = encodeURIComponent(JSON.stringify(user));
+      document.cookie = `${FAKE_USER_COOKIE}=${value}; path=/; max-age=${60 * 60 * 24 * 7}`;
+    }
+
+    function clearFakeUser() {
+      document.cookie = `${FAKE_USER_COOKIE}=; path=/; max-age=0`;
+    }
+
+    // Expose to console for quick testing:
+    // setFakeUser({ name: "Ali", email: "ali@mail.com" })
+    // clearFakeUser()
+    window.setFakeUser = setFakeUser;
+    window.clearFakeUser = clearFakeUser;
+    window.getFakeUser = getFakeUser;
+
+    /* ---------------- DOM refs ---------------- */
+    const authGuests = document.getElementById("authGuests");
+    const authProfile = document.getElementById("authProfile");
+    const profileBtn = document.getElementById("profileBtn");
+    const profileMenu = document.getElementById("profileMenu");
+    const profileName = document.getElementById("profileName");
+    const profileAvatar = document.getElementById("profileAvatar");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    /* ---------------- Render state ---------------- */
+    function render() {
+      const user = getFakeUser();
+      if (user) {
+        authGuests.style.display = "none";
+        authProfile.style.display = "flex";
+
+        const displayName = user.name || user.username || "کاربر";
+        profileName.textContent = displayName;
+        profileAvatar.textContent = displayName.trim().charAt(0).toUpperCase();
+      } else {
+        authGuests.style.display = "flex";
+        authProfile.style.display = "none";
+        closeProfileMenu();
+      }
+    }
+
+    /* ---------------- Profile dropdown ---------------- */
+    function openProfileMenu() {
+      profileMenu.classList.add("open");
+      profileBtn.setAttribute("aria-expanded", "true");
+    }
+
+    function closeProfileMenu() {
+      profileMenu.classList.remove("open");
+      profileBtn.setAttribute("aria-expanded", "false");
+    }
+
+    function toggleProfileMenu(e) {
+      e.stopPropagation();
+      profileMenu.classList.contains("open") ? closeProfileMenu() : openProfileMenu();
+    }
+
+    if (profileBtn) {
+      profileBtn.addEventListener("click", toggleProfileMenu);
+    }
+
+    // close on outside click
+    document.addEventListener("click", (e) => {
+      if (profileMenu && profileMenu.classList.contains("open")) {
+        const clickedInside = profileMenu.contains(e.target) || profileBtn.contains(e.target);
+        if (!clickedInside) closeProfileMenu();
+      }
     });
 
-    /* ---------------- Fake auth logic ---------------- */
-    (function () {
-        // --- fake helpers (swap with real API later) ---
-        const FAKE_USER_COOKIE = "fakeUser";
+    // close on Escape
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeProfileMenu();
+    });
 
-        function getFakeUser() {
-            const raw = document.cookie
-                .split("; ")
-                .find(row => row.startsWith(FAKE_USER_COOKIE + "="));
-            if (!raw) return null;
-            try {
-                return JSON.parse(decodeURIComponent(raw.split("=")[1]));
-            } catch { return null; }
-        }
-
-        function setFakeUser(user) {
-            const value = encodeURIComponent(JSON.stringify(user));
-            document.cookie = `${FAKE_USER_COOKIE}=${value}; path=/; max-age=${60 * 60 * 24 * 7}`;
-        }
-
-        function clearFakeUser() {
-            document.cookie = `${FAKE_USER_COOKIE}=; path=/; max-age=0`;
-        }
-
-        // Expose to console for quick testing:
-        // setFakeUser({ name: "Ali", email: "ali@mail.com" })
-        // clearFakeUser()
-        window.setFakeUser = setFakeUser;
-        window.clearFakeUser = clearFakeUser;
-        window.getFakeUser = getFakeUser;
-
-        /* ---------------- DOM refs ---------------- */
-        const authGuests   = document.getElementById("authGuests");
-        const authProfile  = document.getElementById("authProfile");
-        const profileBtn   = document.getElementById("profileBtn");
-        const profileMenu  = document.getElementById("profileMenu");
-        const profileName  = document.getElementById("profileName");
-        const profileAvatar= document.getElementById("profileAvatar");
-        const logoutBtn    = document.getElementById("logoutBtn");
-
-        /* ---------------- Render state ---------------- */
-        function render() {
-            const user = getFakeUser();
-            if (user) {
-                authGuests.style.display = "none";
-                authProfile.style.display = "flex";
-
-                const displayName = user.name || user.username || "کاربر";
-                profileName.textContent = displayName;
-                profileAvatar.textContent = displayName.trim().charAt(0).toUpperCase();
-            } else {
-                authGuests.style.display = "flex";
-                authProfile.style.display = "none";
-                closeProfileMenu();
-            }
-        }
-
-        /* ---------------- Profile dropdown ---------------- */
-        function openProfileMenu() {
-            profileMenu.classList.add("open");
-            profileBtn.setAttribute("aria-expanded", "true");
-        }
-        function closeProfileMenu() {
-            profileMenu.classList.remove("open");
-            profileBtn.setAttribute("aria-expanded", "false");
-        }
-        function toggleProfileMenu(e) {
-            e.stopPropagation();
-            profileMenu.classList.contains("open") ? closeProfileMenu() : openProfileMenu();
-        }
-
-        if (profileBtn) {
-            profileBtn.addEventListener("click", toggleProfileMenu);
-        }
-
-        // close on outside click
-        document.addEventListener("click", (e) => {
-            if (profileMenu && profileMenu.classList.contains("open")) {
-                const clickedInside = profileMenu.contains(e.target) || profileBtn.contains(e.target);
-                if (!clickedInside) closeProfileMenu();
-            }
-        });
-
-        // close on Escape
-        document.addEventListener("keydown", (e) => {
-            if (e.key === "Escape") closeProfileMenu();
-        });
-
-        /* ---------------- Logout ---------------- */
-        if (logoutBtn) {
-            logoutBtn.addEventListener("click", () => {
-                clearFakeUser();
-                closeProfileMenu();
-                render();
-                // optional: redirect home
-                if (location.pathname.startsWith("/profile") || location.pathname.startsWith("/settings")) {
-                    location.href = "/";
-                }
-            });
-        }
-
-        /* ---------------- Auto-set fake user after login/register submit ---------------- */
-        // If your login/register pages POST normally and redirect,
-        // you can set the cookie on the server side. But for a quick
-        // fake flow, we intercept submissions here:
-        const loginForm = document.getElementById("loginForm");
-        const registerForm = document.getElementById("registerForm");
-
-        if (loginForm) {
-            loginForm.addEventListener("submit", () => {
-                const identifier = loginForm.querySelector('input[name="identifier"]').value.trim();
-                // treat identifier as name for the fake demo
-                setFakeUser({ name: identifier.split("@")[0], email: identifier });
-            });
-        }
-
-        if (registerForm) {
-            registerForm.addEventListener("submit", () => {
-                const name = registerForm.querySelector('input[name="name"]').value.trim();
-                const email = registerForm.querySelector('input[name="email"]').value.trim();
-                setFakeUser({ name, email });
-            });
-        }
-
-        /* ---------------- Initial render ---------------- */
+    /* ---------------- Logout ---------------- */
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", () => {
+        clearFakeUser();
+        closeProfileMenu();
         render();
-    })();
+        // optional: redirect home
+        if (location.pathname.startsWith("/profile") || location.pathname.startsWith("/settings")) {
+          location.href = "/";
+        }
+      });
+    }
+
+    /* ---------------- Auto-set fake user after login/register submit ---------------- */
+    // If your login/register pages POST normally and redirect,
+    // you can set the cookie on the server side. But for a quick
+    // fake flow, we intercept submissions here:
+    const loginForm = document.getElementById("loginForm");
+    const registerForm = document.getElementById("registerForm");
+
+    if (loginForm) {
+      loginForm.addEventListener("submit", () => {
+        const identifier = loginForm.querySelector('input[name="identifier"]').value.trim();
+        // treat identifier as name for the fake demo
+        setFakeUser({
+          name: identifier.split("@")[0],
+          email: identifier
+        });
+      });
+    }
+
+    if (registerForm) {
+      registerForm.addEventListener("submit", () => {
+        const name = registerForm.querySelector('input[name="name"]').value.trim();
+        const email = registerForm.querySelector('input[name="email"]').value.trim();
+        setFakeUser({
+          name,
+          email
+        });
+      });
+    }
+
+    /* ---------------- Initial render ---------------- */
+    render();
+  })();
 </script>
