@@ -10,7 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.toggle-pass').forEach(btn => {
         btn.addEventListener('click', () => {
             const input = document.getElementById(btn.dataset.target);
-            if (!input) return;
+            if (!input)
+                return;
 
             const isPassword = input.type === 'password';
             input.type = isPassword ? 'text' : 'password';
@@ -37,16 +38,20 @@ document.addEventListener('DOMContentLoaded', () => {
             if (confirmInput.value.length > 0 && !match) {
                 confirmError.classList.add('visible');
                 confirmInput.style.borderColor = '#ff4d4d';
+
                 return false;
             }
+
             confirmError.classList.remove('visible');
             confirmInput.style.borderColor = '';
+
             return true;
         }
 
         confirmInput.addEventListener('input', validatePasswords);
         passwordInput.addEventListener('input', () => {
-            if (confirmInput.value.length > 0) validatePasswords();
+            if (confirmInput.value.length > 0)
+                validatePasswords();
         });
 
         registerForm.addEventListener('submit', (e) => {
@@ -56,14 +61,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!passwordsOk) {
                 e.preventDefault();
                 confirmInput.focus();
+
                 return;
             }
 
             if (!termsOk) {
                 e.preventDefault();
                 alert('برای ثبت نام باید قوانین را بپذیرید.');
+
                 return;
             }
+
             // otherwise form submits normally to /register
         });
     }
@@ -81,8 +89,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!identifier || !password) {
                 e.preventDefault();
+
                 return;
             }
+
             // form submits normally to /login
         });
     }
