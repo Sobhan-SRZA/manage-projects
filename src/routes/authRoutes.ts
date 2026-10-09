@@ -5,16 +5,16 @@ import * as ctrl from "../controllers/authController";
 const router = Router();
 
 // ---------- public ----------
-router.post("/auth/register", ctrl.register);
-router.post("/auth/login", ctrl.login);
-router.post("/auth/refresh", ctrl.refresh);
-router.post("/auth/logout", ctrl.logout);            // logout works without auth (just clears cookies)
+router.post("/register", ctrl.register);
+router.post("/login", ctrl.login);
+router.post("/refresh", ctrl.refresh);
+router.post("/logout", ctrl.logout);            // logout works without auth (just clears cookies)
 
 // ---------- protected ----------
-router.get("/auth/me", requireAuth, ctrl.me);
-router.post("/auth/logout-all", requireAuth, ctrl.logoutAll);
-router.get("/auth/sessions", requireAuth, ctrl.listSessions);
-router.delete("/auth/sessions/:id", requireAuth, ctrl.revokeSession);
+router.get("/me", requireAuth, ctrl.me);
+router.post("/logout-all", requireAuth, ctrl.logoutAll);
+router.get("/sessions", requireAuth, ctrl.listSessions);
+router.delete("/sessions/:id", requireAuth, ctrl.revokeSession);
 
 export default router;
 
