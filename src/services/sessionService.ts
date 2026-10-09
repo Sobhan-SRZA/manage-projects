@@ -7,6 +7,7 @@ import { Types } from "mongoose";
 
 interface CreateSessionInput {
     userId: Types.ObjectId | string;
+    sessionId: string;          // stable random id
     token: string;
     refreshToken?: string;
     req: Request;
@@ -18,6 +19,7 @@ interface CreateSessionInput {
 
 export async function createSession(input: CreateSessionInput) {
     const {
+        sessionId,
         userId,
         token,
         refreshToken,
@@ -40,6 +42,7 @@ export async function createSession(input: CreateSessionInput) {
     const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000);
 
     const session = await Session.create({
+        sessionId,
         user: userId,
         token,
         refreshToken,
