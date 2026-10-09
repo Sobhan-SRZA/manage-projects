@@ -1,38 +1,37 @@
-import {
-    AppError,
-    NotFound,
-    Unauthorized
-} from "../utils/AppError";
 import type {
     Response,
     NextFunction
-} from "express";
-import { verifyToken } from "../utils/token";
-import { ErrorCodes } from "../utils/errorCodes";
-import { Session } from "../models/Session";
-import { User } from "../models/User";
+} from 'express';
+import { verifyToken } from '../utils/token';
+import { ErrorCodes } from '../utils/errorCodes';
+import { AppError } from '../utils/AppError';
+import { Session } from '../models/Session';
+import { User } from '../models/User';
 
-export interface AuthRequest extends Request {
-    user?: any;
-    session?: any;
-}
-
-export async function requireAuth(req: any, _res: Response, next: NextFunction) {
+export async function requireAuth(req: any, res: Response, next: NextFunction) {
     try {
-        // 1. try cookie first
         let token = req.cookies?.access_token as string | undefined;
 
-        // 2. fallback to Authorization header
-        if (!token && req.headers.authorization?.startsWith("Bearer ")) {
+        if (!token && req.headers.authorization?.startsWith('Bearer ')) {
             token = req.headers.authorization.slice(7);
         }
 
-        if (!token)
-            throw new AppError(401, "NO_TOKEN", "ابتدا وارد شوید");
+        if (!token) {
+            return next(new AppError(401, ErrorCodes.NO_TOKEN));
+        }
 
-        const payload = verifyToken(token);
-        if (payload.typ !== "access") {
-            throw new AppError(401, "WRONG_TOKEN_TYPE", "نوع توکن اشتباه است");
+        let payload;
+        try {
+            payload = verifyToken(token);
+        }
+
+        catch (jwtErr: any) {
+            // JWT error رو مستقیم رد کن — errorHandler خودش می‌شناسه
+            return next(jwtErr);
+        }
+
+        if (payload.typ !== 'access') {
+            return next(new AppError(401, ErrorCodes.WRONG_TOKEN_TYPE));
         }
 
         const session = await Session.findOne({
@@ -41,34 +40,35 @@ export async function requireAuth(req: any, _res: Response, next: NextFunction) 
         });
 
         if (!session)
-            throw Unauthorized(ErrorCodes.SESSION_NOT_FOUND, "SESSION_NOT_FOUND", "سشن یافت نشد");
+            return next(new AppError(401, ErrorCodes.SESSION_NOT_FOUND));
 
-        if (session.expiresAt < new Date()) {
-            throw Unauthorized(ErrorCodes.SESSION_EXPIRED, "SESSION_EXPIRED", "سشن منقضی شده است");
-        }
+        if (session.expiresAt < new Date())
+            return next(new AppError(401, ErrorCodes.SESSION_EXPIRED));
 
         const user = await User.findById(payload.sub).lean();
         if (!user)
-            throw NotFound(ErrorCodes.ACCOUNT_NOT_FOUND, "USER_NOT_FOUND", "کاربر یافت نشد");
+            return next(new AppError(401, ErrorCodes.UNAUTHENTICATED));
 
         req.user = user;
         req.session = session;
 
-        // fire-and-forget
+        // fire-and-forget — هرگز خطا پرتاب نکن
         Session.updateOne(
             { _id: session._id },
             { lastActiveAt: new Date() }
-        ).catch(() => { });
+        ).catch((err) => {
+            console.warn('[requireAuth] touch failed:', err?.message);
+        });
 
-        next();
+        return next();
     }
 
     catch (err) {
-        next(err);
+        // اگه واقعاً یه خطای غیرمنتظره رخ داد
+        return next(err);
     }
 }
 
-/** attach user if token exists, otherwise continue as guest */
 export async function optionalAuth(req: any, _res: Response, next: NextFunction) {
     try {
         const token = req.cookies?.access_token as string | undefined;
@@ -76,7 +76,7 @@ export async function optionalAuth(req: any, _res: Response, next: NextFunction)
             return next();
 
         const payload = verifyToken(token);
-        if (payload.typ !== "access")
+        if (payload.typ !== 'access')
             return next();
 
         const session = await Session.findOne({
@@ -93,11 +93,12 @@ export async function optionalAuth(req: any, _res: Response, next: NextFunction)
         }
     }
 
-    catch {
-        /* ignore */
+    catch (err) {
+        // guest باقی می‌مونه — خطا مهم نیست
+        console.debug('[optionalAuth] ignored:', (err as Error)?.message);
     }
 
-    next();
+    return next();
 }
 
 /**
