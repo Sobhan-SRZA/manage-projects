@@ -1,14 +1,11 @@
-import {
-    Schema,
-    model,
-    Model
-} from "mongoose";
+import { Schema, model, Model } from "mongoose";
 import bcrypt from "bcrypt";
 
 export interface IUser {
     name: string;
-    username: string;
-    email: string;
+    username: string;         // نمایشی (case اصلی که کاربر انتخاب کرده)
+    usernameLower: string;    // برای چک یکتایی (lowercase)
+    email: string;            // همیشه lowercase
     password: string;
     createdAt: Date;
     updatedAt: Date;
@@ -22,15 +19,52 @@ type UserModel = Model<IUser, {}, IUserMethods>;
 
 const userSchema = new Schema<IUser, UserModel, IUserMethods>(
     {
-        name: { type: String, required: true, trim: true },
-        username: { type: String, required: true, unique: true, trim: true },
-        email: { type: String, required: true, unique: true, trim: true, lowercase: true },
-        password: { type: String, required: true, minlength: 6, select: false },
+        name: { type: String, required: true, trim: true, minlength: 2, maxlength: 60 },
+
+        username: {
+            type: String,
+            required: true,
+            trim: true,
+            minlength: 3,
+            maxlength: 20
+        },
+
+        usernameLower: {
+            type: String,
+            required: true,
+            unique: true,
+            index: true,
+            lowercase: true,
+            trim: true
+        },
+
+        email: {
+            type: String,
+            required: true,
+            unique: true,
+            index: true,
+            lowercase: true,
+            trim: true
+        },
+
+        password: {
+            type: String,
+            required: true,
+            minlength: 6,
+            select: false
+        }
     },
     { timestamps: true }
 );
 
+/* ---------------- pre-validate: sync usernameLower ---------------- */
+userSchema.pre("validate", function () {
+    if (this.isModified("username") || !this.usernameLower) {
+        this.usernameLower = (this.username || "").toLowerCase().trim();
+    }
+});
 
+/* ---------------- pre-save: hash password ---------------- */
 userSchema.pre("save", async function () {
     if (!this.isModified("password"))
         return;
@@ -39,8 +73,9 @@ userSchema.pre("save", async function () {
     this.password = await bcrypt.hash(this.password, salt);
 });
 
-userSchema.method("comparePassword", async function (candidatePassword: string) {
-    return bcrypt.compare(candidatePassword, this.password);
+/* ---------------- methods ---------------- */
+userSchema.method("comparePassword", async function (candidate: string) {
+    return bcrypt.compare(candidate, this.password);
 });
 
 export const User = model<IUser, UserModel>("User", userSchema);
