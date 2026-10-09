@@ -197,6 +197,7 @@ export const me = asyncHandler(async (req: any, res: Response) => {
         ok: true,
         user: {
             id: req.user._id,
+            createdAt: req.user.createdAt,
             name: req.user.name,
             username: req.user.username,
             email: req.user.email
