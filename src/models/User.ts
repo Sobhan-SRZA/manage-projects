@@ -2,10 +2,9 @@ import {
     Schema,
     model,
     Model
-} from 'mongoose';
-import bcrypt from 'bcrypt';
+} from "mongoose";
+import bcrypt from "bcrypt";
 
-// 1. Define the raw document interface
 export interface IUser {
     name: string;
     username: string;
@@ -15,15 +14,12 @@ export interface IUser {
     updatedAt: Date;
 }
 
-// 2. Define methods available on instances (documents)
 export interface IUserMethods {
     comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
-// 3. Define the User Model type
 type UserModel = Model<IUser, {}, IUserMethods>;
 
-// 4. Create the schema with the interface and methods
 const userSchema = new Schema<IUser, UserModel, IUserMethods>(
     {
         name: { type: String, required: true, trim: true },
@@ -34,29 +30,20 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>(
     { timestamps: true }
 );
 
-// 5. Hash password before saving (Mongoose middleware)
-userSchema.pre('save', async function (next) {
-    if (!this.isModified('password'))
-         return next();
-        
-    try {
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
-        next();
-    } 
-    
-    catch (err) {
-        next(err as Error);
-    }
+
+userSchema.pre("save", async function () {
+    if (!this.isModified("password"))
+        return;
+
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
 });
 
-// 6. Add instance method for password comparison
-userSchema.method('comparePassword', async function (candidatePassword: string) {
+userSchema.method("comparePassword", async function (candidatePassword: string) {
     return bcrypt.compare(candidatePassword, this.password);
 });
 
-// 7. Create and export the model
-export const User = model<IUser, UserModel>('User', userSchema);
+export const User = model<IUser, UserModel>("User", userSchema);
 
 /**
  * Copyright (c) 2026 Sobhan Rasoulzadeh Asl (Sobhan-SRZA / Mr. Sinre)
