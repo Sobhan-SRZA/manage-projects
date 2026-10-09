@@ -54,10 +54,11 @@ setTimeout(() => {
     app.use((req, res) => {
         res.redirect("/api/404");
     });
+    
+    // error handler — MUST be last
+    app.use(errorHandler);
 }, 1000);
 
-// error handler — MUST be last
-app.use(errorHandler);
 
 export default app;
 
