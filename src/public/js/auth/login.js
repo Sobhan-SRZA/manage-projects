@@ -1,42 +1,60 @@
-document.getElementById("loginForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
+/* ============================================================
+   Login page
+   ============================================================ */
 
-    const form = e.target;
-    const btn = form.querySelector(".auth-btn");
-    const originalText = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = "در حال ورود...";
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('loginForm');
+    if (!form) return;
 
-    try {
-        const body = {
-            identifier: form.identifier.value.trim(),
-            password: form.password.value,
-            remember: form.remember?.checked ?? false,
-        };
+    FormKit.attach(form, {
+        /* ---------------- اعتبارسنجی سمت کلاینت ---------------- */
+        validate(v) {
+            const errors = {};
 
-        const res = await fetch("/api/auth/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify(body),
-        });
+            if (!v.identifier) {
+                errors.identifier = 'ایمیل یا نام کاربری الزامی است';
+            } else if (v.identifier.length < 3) {
+                errors.identifier = 'حداقل ۳ کاراکتر وارد کنید';
+            } else if (v.identifier.length > 254) {
+                errors.identifier = 'مقدار وارد شده خیلی طولانی است';
+            }
 
-        const data = await res.json();
+            if (!v.password) {
+                errors.password = 'رمز عبور الزامی است';
+            } else if (v.password.length < 6) {
+                errors.password = 'رمز عبور باید حداقل ۶ کاراکتر باشد';
+            }
 
-        if (!res.ok) {
-            // your existing dialogError component
-            openDialogError("خطا", data.message || "ورود ناموفق بود");
-            return;
-        }
+            return errors;
+        },
 
-        // success → redirect home
-        window.location.href = "/";
-    } catch (err) {
-        openDialogError("خطا", "اتصال به سرور برقرار نشد");
-    } finally {
-        btn.disabled = false;
-        btn.textContent = originalText;
-    }
+        /* ---------------- ارسال ---------------- */
+        submit(v) {
+            return FormKit.postJSON('/api/auth/login', {
+                identifier: v.identifier,
+                password: v.password,
+                remember: !!v.remember,
+            });
+        },
+
+        /* ---------------- success ---------------- */
+        onSuccess() {
+            toast('خوش آمدید', 'success');
+            setTimeout(() => (location.href = '/'), 500);
+        },
+
+        onError(payload) {
+            if (location.hostname === 'localhost') {
+                console.debug('[login error]', payload);
+            }
+
+            // اگه خطای invalid credentials بود → روی فیلد password تمرکز کن
+            if (payload?.code === FormKit.ERROR_CODES.INVALID_CREDENTIALS) {
+                const pw = form.querySelector('[name="password"]');
+                if (pw) pw.select?.();
+            }
+        },
+    });
 });
 
 /**
