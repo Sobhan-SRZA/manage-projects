@@ -76,6 +76,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 
     // create Session doc with device + location info
     await createSession({
+        sessionId,
         userId: user._id,
         token: access,
         refreshToken: refresh,
@@ -124,6 +125,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     const refresh = signRefreshToken({ sub: user._id.toString(), sid: sessionId });
 
     await createSession({
+        sessionId,
         userId: user._id,
         token: access,
         refreshToken: refresh,
