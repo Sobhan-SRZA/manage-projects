@@ -1,0 +1,65 @@
+import loadRoutes from "./lib/loader";
+import express from "express";
+import dotenv from "dotenv";
+import path from "path";
+import { config } from "./config/env";
+
+dotenv.config();
+
+const app = express();
+
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Set EJS as the view engine
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "../src/views"));
+
+
+// Serve static files (your CSS, client-side JS)
+app.use(
+    express.static(
+        path.join(__dirname, "../src/public")
+    )
+);
+
+// --- Routes ---
+const routes = [
+    {
+        dir: "pages",
+        prefix: ""
+    },
+    {
+        dir: "api",
+        prefix: "/api"
+    }
+];
+
+Promise.all(
+    routes.map(async route => {
+        await loadRoutes(
+            app,
+            path.join(__dirname, route.dir),
+            route.prefix
+        );
+    })
+)
+
+// Redirect all invalid URLs to /404
+setTimeout(() => {
+    app.use((req, res) => {
+        res.redirect("/api/404");
+    });
+}, 1000);
+
+export default app;
+
+/**
+ * Copyright (c) 2026 Sobhan Rasoulzadeh Asl (Sobhan-SRZA / Mr. Sinre)
+ *
+ * Licensed under the BSD 3-Clause License.
+ * See the LICENSE file in the project root for license information.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
