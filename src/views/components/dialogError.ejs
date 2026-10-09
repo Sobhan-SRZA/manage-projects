@@ -1,50 +1,207 @@
-<div class="dialogErrorBack" style="display: none;"></div>
-<dialog class="errorDialog">
-  <button class="close" onclick="closeDialog(event)">❌</button>
-  <h2 id="title"></h2>
-  <p id="message"></p>
+<link rel="stylesheet" href="/styles/dialog.css">
+
+<!-- backdrop -->
+<div class="dialog-backdrop" id="dialogBackdrop" aria-hidden="true"></div>
+
+<!-- error / info dialog -->
+<dialog class="app-dialog" id="appDialog" aria-labelledby="appDialogTitle">
+  <div class="app-dialog__icon" id="appDialogIcon">!</div>
+  <h2 class="app-dialog__title" id="appDialogTitle">—</h2>
+  <p class="app-dialog__message" id="appDialogMessage">—</p>
+  <div class="app-dialog__actions">
+    <button type="button" class="app-dialog__btn app-dialog__btn--primary" id="appDialogOk">باشه</button>
+  </div>
 </dialog>
 
+<!-- confirm dialog -->
+<dialog class="app-dialog app-dialog--confirm" id="confirmDialog" aria-labelledby="confirmDialogTitle">
+  <div class="app-dialog__icon app-dialog__icon--warn" id="confirmDialogIcon">؟</div>
+  <h2 class="app-dialog__title" id="confirmDialogTitle">تایید</h2>
+  <p class="app-dialog__message" id="confirmDialogMessage">—</p>
+  <div class="app-dialog__actions">
+    <button type="button" class="app-dialog__btn app-dialog__btn--ghost" id="confirmDialogCancel">انصراف</button>
+    <button type="button" class="app-dialog__btn app-dialog__btn--danger" id="confirmDialogOk">تایید</button>
+  </div>
+</dialog>
+
+<!-- toast container -->
+<div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+
 <script>
-  const dialog_bg = document.querySelector(".dialogErrorBack");
-  const dialog = document.querySelector(".errorDialog");
+  /* ============================================================
+     Global dialog + confirm + toast API
+     Backwards-compatible with old openDialogError / closeDialogError
+     ============================================================ */
 
-  const openDialogError = (title, message) => {
-    dialog_bg.style.display = "block";
-    dialog.open = "true";
-    dialog.querySelector("#title").innerText = title;
-    dialog.querySelector("#message").innerText = message;
+  (function() {
+    /* ---------- refs ---------- */
+    const backdrop = document.getElementById('dialogBackdrop');
 
-    return;
-  }
+    const errDialog = document.getElementById('appDialog');
+    const errIcon = document.getElementById('appDialogIcon');
+    const errTitle = document.getElementById('appDialogTitle');
+    const errMessage = document.getElementById('appDialogMessage');
+    const errOk = document.getElementById('appDialogOk');
 
-  const closeDialogError = () => {
-    dialog_bg.style.display = "none";
-    dialog.open = null;
+    const cfmDialog = document.getElementById('confirmDialog');
+    const cfmIcon = document.getElementById('confirmDialogIcon');
+    const cfmTitle = document.getElementById('confirmDialogTitle');
+    const cfmMessage = document.getElementById('confirmDialogMessage');
+    const cfmOk = document.getElementById('confirmDialogOk');
+    const cfmCancel = document.getElementById('confirmDialogCancel');
 
-    return;
-  }
+    const toastWrap = document.getElementById('toastContainer');
 
-  document.addEventListener("click", async (e) => {
-    const isDialog =
-      dialog.isEqualNode(e.target) ||
-      dialog.childNodes
-      .values()
-      .toArray()
-      .includes(e.target);
-
-    if (dialog.open) {
-      if (!isDialog)
-        closeDialogError();
+    /* ---------- helpers ---------- */
+    function openBackdrop() {
+      backdrop.classList.add('open');
     }
-  })
 
-  document.addEventListener("keydown", async (e) => {
-    if (dialog.open) {
-      if (e.key === "Escape")
-        closeDialogError();
+    function closeBackdrop() {
+      backdrop.classList.remove('open');
     }
-  })
 
-  const closeDialog = (e) => closeDialogError();
+    function isAnyDialogOpen() {
+      return errDialog.open || cfmDialog.open;
+    }
+
+    /* ============================================================
+       ERROR / INFO DIALOG
+       ============================================================ */
+    function openDialogError(title, message, type = 'error') {
+      errTitle.textContent = title || 'خطا';
+      errMessage.textContent = message || '';
+      errIcon.textContent = type === 'success' ? '✓' : type === 'info' ? 'i' : '!';
+      errIcon.className = `app-dialog__icon app-dialog__icon--${type}`;
+
+      openBackdrop();
+      errDialog.showModal();
+    }
+
+    function closeDialogError() {
+      errDialog.close();
+      if (!isAnyDialogOpen()) closeBackdrop();
+    }
+
+    errOk.addEventListener('click', closeDialogError);
+
+    /* ============================================================
+       CONFIRM DIALOG (Promise-based)
+       ============================================================ */
+    function confirmDialog(opts = {}) {
+      const {
+        title = 'تایید',
+          message = 'مطمئن هستید؟',
+          confirmText = 'تایید',
+          cancelText = 'انصراف',
+          danger = true,
+      } = opts;
+
+      return new Promise((resolve) => {
+        cfmTitle.textContent = title;
+        cfmMessage.textContent = message;
+        cfmOk.textContent = confirmText;
+        cfmCancel.textContent = cancelText;
+        cfmIcon.textContent = danger ? '!' : '؟';
+        cfmIcon.className = `app-dialog__icon ${danger ? 'app-dialog__icon--error' : 'app-dialog__icon--warn'}`;
+        cfmOk.className = `app-dialog__btn ${danger ? 'app-dialog__btn--danger' : 'app-dialog__btn--primary'}`;
+
+        const cleanup = () => {
+          cfmOk.removeEventListener('click', onOk);
+          cfmCancel.removeEventListener('click', onCancel);
+          cfmDialog.removeEventListener('cancel', onCancel);
+          cfmDialog.removeEventListener('close', onClose);
+          if (!isAnyDialogOpen()) closeBackdrop();
+        };
+
+        const onOk = () => {
+          cleanup();
+          cfmDialog.close('ok');
+          resolve(true);
+        };
+        const onCancel = (e) => {
+          e?.preventDefault?.();
+          cleanup();
+          cfmDialog.close('cancel');
+          resolve(false);
+        };
+        const onClose = () => {
+          /* safety net */ };
+
+        cfmOk.addEventListener('click', onOk);
+        cfmCancel.addEventListener('click', onCancel);
+        cfmDialog.addEventListener('cancel', onCancel); // ESC
+        cfmDialog.addEventListener('close', onClose);
+
+        openBackdrop();
+        cfmDialog.showModal();
+      });
+    }
+
+    /* ============================================================
+       TOAST
+       ============================================================ */
+    function toast(message, type = 'info', duration = 3200) {
+      const el = document.createElement('div');
+      el.className = `app-toast app-toast--${type}`;
+      el.setAttribute('role', 'status');
+
+      const icons = {
+        success: '✓',
+        error: '!',
+        info: 'i',
+        warn: '!'
+      };
+      el.innerHTML = `
+            <span class="app-toast__icon">${icons[type] || 'i'}</span>
+            <span class="app-toast__message"></span>
+            <button type="button" class="app-toast__close" aria-label="بستن">×</button>
+        `;
+      el.querySelector('.app-toast__message').textContent = message;
+      el.querySelector('.app-toast__close').addEventListener('click', () => dismiss());
+
+      toastWrap.appendChild(el);
+      // trigger entry animation
+      requestAnimationFrame(() => el.classList.add('app-toast--visible'));
+
+      let timer = setTimeout(() => dismiss(), duration);
+
+      function dismiss() {
+        clearTimeout(timer);
+        el.classList.remove('app-toast--visible');
+        el.addEventListener('transitionend', () => el.remove(), {
+          once: true
+        });
+      }
+    }
+
+    /* ============================================================
+       Backdrop click → close whatever is open
+       ============================================================ */
+    backdrop.addEventListener('click', () => {
+      if (cfmDialog.open) {
+        cfmDialog.close('cancel');
+      } else if (errDialog.open) {
+        closeDialogError();
+      }
+    });
+
+    /* ============================================================
+       ESC on backdrop (in case dialog ESC doesn't fire)
+       ============================================================ */
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (cfmDialog.open) cfmDialog.close('cancel');
+        else if (errDialog.open) closeDialogError();
+      }
+    });
+
+    /* ============================================================
+       Expose globally
+       ============================================================ */
+    window.openDialogError = openDialogError;
+    window.closeDialogError = closeDialogError;
+    window.confirmDialog = confirmDialog;
+    window.toast = toast;
+  })();
 </script>
