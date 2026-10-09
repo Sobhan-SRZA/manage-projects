@@ -21,11 +21,10 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     /* ---------------- helpers ---------------- */
-    async function api(path, opts = {}) {
+    async function apiGet(path) {
         const res = await fetch(path, {
             credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            ...opts,
+            headers: { 'Content-Type': 'application/json' }
         });
 
         let data = null;
@@ -35,10 +34,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const err = new Error(data?.message || 'Request failed');
             err.code = data?.code;
             err.status = res.status;
-
+            err.details = data?.details;
+            err.field = data?.field;
             throw err;
         }
-
         return data;
     }
 
@@ -251,6 +250,10 @@ document.addEventListener('DOMContentLoaded', () => {
             toast('از این دستگاه خارج شدید', 'success');
             await loadSessions();
         } catch (err) {
+            if (err.code === 'SESSION_EXPIRED' || err.code === 'UNAUTHENTICATED') {
+                location.href = '/login';
+                return;
+            }
             toast(err.message || 'خروج ناموفق بود', 'error');
             btn.disabled = false;
         }
@@ -259,13 +262,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function logout() {
         const ok = await confirmDialog({
-            title: 'خروج از همه دستگاه فعلی',
+            title: 'خروج از دستگاه فعلی',
             message: 'سشن‌ شما بسته می‌شود. ادامه می‌دهید؟',
             confirmText: 'بله، سشن را ببند',
-            danger: true,
+            danger: true
         });
         if (!ok) return;
 
+        btn.disabled = true;
         try {
             await FormKit.postJSON('/api/auth/logout', {});
             window.location.href = '/';
@@ -296,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
     /* ---------------- loaders ---------------- */
     async function loadUser() {
         try {
-            const data = await api('/api/auth/me');
+            const data = await apiGet('/api/auth/me');
             renderUser(data.user);
 
             return data;
@@ -315,7 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadSessions() {
         try {
-            const data = await api('/api/auth/sessions');
+            const data = await apiGet('/api/auth/sessions');
             renderSessions(data.sessions, data.current);
         }
 
@@ -337,7 +341,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         await loadSessions();
     })();
-
 });
 
 /**
