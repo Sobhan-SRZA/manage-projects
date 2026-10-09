@@ -3,8 +3,8 @@ import { Router } from "express";
 
 const router = Router();
 
-router.get("/profile", pageAuth, (req: any, res) => {
-    res.render('profile', { user: req.user });
+router.get("/", pageAuth, (req: any, res) => {
+    res.render("profile", { user: req.user });
 });
 
 export default router;
