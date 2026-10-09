@@ -236,49 +236,60 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* ---------------- actions ---------------- */
     async function revokeSession(id, btn) {
-        if (!confirm('از این دستگاه خارج می‌شوید؟')) return;
+        const ok = await confirmDialog({
+            title: 'خروج از دستگاه',
+            message: 'مطمئنید می‌خواهید از این دستگاه خارج شوید؟',
+            confirmText: 'بله، خارج شو',
+            cancelText: 'انصراف',
+            danger: true,
+        });
+        if (!ok) return;
 
-        const original = btn.textContent;
         btn.disabled = true;
-        btn.textContent = 'در حال خروج…';
-
         try {
-            await api(`/api/auth/sessions/${id}`, { method: 'DELETE' });
-            // reload sessions list
+            await FormKit.postJSON(`/api/auth/sessions/${id}`, {}, { method: 'DELETE' });
+            toast('از این دستگاه خارج شدید', 'success');
             await loadSessions();
-        }
-
-        catch (err) {
-            showError('خطا', err.message || 'خروج از دستگاه ناموفق بود');
+        } catch (err) {
+            toast(err.message || 'خروج ناموفق بود', 'error');
             btn.disabled = false;
-            btn.textContent = original;
         }
     }
 
+
     async function logout() {
+        const ok = await confirmDialog({
+            title: 'خروج از همه دستگاه فعلی',
+            message: 'سشن‌ شما بسته می‌شود. ادامه می‌دهید؟',
+            confirmText: 'بله، سشن را ببند',
+            danger: true,
+        });
+        if (!ok) return;
+
         try {
-            await api('/api/auth/logout', { method: 'POST' });
+            await FormKit.postJSON('/api/auth/logout', {});
             window.location.href = '/';
         }
 
         catch (err) {
-            showError('خطا', err.message || 'خروج ناموفق بود');
+            toast(err.message || 'خطا در خروج', 'error');
         }
     }
 
     async function logoutAll() {
-        if (!confirm('از همه دستگاه‌ها خارج می‌شوید؟'))
-            return;
+        const ok = await confirmDialog({
+            title: 'خروج از همه دستگاه‌ها',
+            message: 'همه سشن‌های فعال شما بسته می‌شوند. ادامه می‌دهید؟',
+            confirmText: 'بله، همه را ببند',
+            danger: true,
+        });
+        if (!ok) return;
 
-        els.logoutAllBtn.disabled = true;
         try {
-            await api('/api/auth/logout-all', { method: 'POST' });
+            await FormKit.postJSON('/api/auth/logout-all', {});
             window.location.href = '/';
-        }
-
-        catch (err) {
-            showError('خطا', err.message || 'خروج از همه دستگاه‌ها ناموفق بود');
-            els.logoutAllBtn.disabled = false;
+        } catch (err) {
+            toast(err.message || 'خطا در خروج', 'error');
         }
     }
 
@@ -328,3 +339,12 @@ document.addEventListener('DOMContentLoaded', () => {
     })();
 
 });
+
+/**
+ * Copyright (c) 2026 Sobhan Rasoulzadeh Asl (Sobhan-SRZA / Mr. Sinre)
+ *
+ * Licensed under the BSD 3-Clause License.
+ * See the LICENSE file in the project root for license information.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
