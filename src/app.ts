@@ -1,8 +1,9 @@
+import { errorHandler } from "./middleware/errorHandler";
+import cookieParser from "cookie-parser";
 import loadRoutes from "./lib/loader";
 import express from "express";
 import dotenv from "dotenv";
 import path from "path";
-import { config } from "./config/env";
 
 dotenv.config();
 
@@ -10,7 +11,9 @@ const app = express();
 
 // Middleware
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
+
 
 // Set EJS as the view engine
 app.set("view engine", "ejs");
@@ -52,6 +55,9 @@ setTimeout(() => {
         res.redirect("/api/404");
     });
 }, 1000);
+
+// error handler — MUST be last
+app.use(errorHandler);
 
 export default app;
 
