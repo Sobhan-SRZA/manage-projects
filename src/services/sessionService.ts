@@ -1,9 +1,9 @@
-import { parseUserAgent } from '../utils/parseUserAgent';
-import type { Request } from 'express';
-import { getClientIp } from '../utils/geoip';
-import { lookupIp } from '../utils/geoip';
-import { Session } from '../models/Session';
-import { Types } from 'mongoose';
+import { parseUserAgent } from "../utils/parseUserAgent";
+import type { Request } from "express";
+import { getClientIp } from "../utils/geoip";
+import { lookupIp } from "../utils/geoip";
+import { Session } from "../models/Session";
+import { Types } from "mongoose";
 
 interface CreateSessionInput {
     userId: Types.ObjectId | string;
@@ -25,16 +25,16 @@ export async function createSession(input: CreateSessionInput) {
         ttlDays = 7,
         deviceId,
         fingerprint,
-        macAddress,
+        macAddress
     } = input;
 
-    const userAgent = req.headers['user-agent'] || 'unknown';
+    const userAgent = req.headers["user-agent"] || "unknown";
     const ip = getClientIp(req);
 
     // parallel calls for speed
     const [device, location] = await Promise.all([
         Promise.resolve(parseUserAgent(userAgent)),
-        lookupIp(ip),
+        lookupIp(ip)
     ]);
 
     const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000);
@@ -49,7 +49,7 @@ export async function createSession(input: CreateSessionInput) {
         loginAt: new Date(),
         lastActiveAt: new Date(),
         expiresAt,
-        revoked: false,
+        revoked: false
     });
 
     return session;
