@@ -1,53 +1,88 @@
-document.getElementById('registerForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
+/* ============================================================
+   Register page
+   ============================================================ */
 
-    const form = e.target;
-    const btn = form.querySelector('.auth-btn');
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('registerForm');
+    if (!form) return;
 
-    // client-side password match check (already exists in auth.js)
-    if (form.password.value !== form.confirmPassword.value) {
-        openDialogError('خطا', 'رمز عبور و تکرار آن یکسان نیستند');
-        return;
-    }
+    /* ---------------- regex هم‌راستا با سرور ---------------- */
+    const RE = {
+        name: /^.{2,60}$/,
+        username: /^[a-zA-Z0-9_.-]{3,20}$/,
+        email: /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/,
+        password: /^(?=.*[A-Za-z])(?=.*\d).{6,}$/,
+    };
 
-    const originalText = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = 'در حال ثبت نام...';
+    FormKit.attach(form, {
+        /* ---------------- اعتبارسنجی سمت کلاینت ---------------- */
+        validate(v) {
+            const errors = {};
 
-    try {
-        const body = {
-            name: form.name.value.trim(),
-            username: form.username.value.trim(),
-            email: form.email.value.trim(),
-            password: form.password.value,
-            confirmPassword: form.confirmPassword.value,
-            terms: form.terms.checked,
-        };
+            // name
+            if (!v.name) errors.name = 'نام الزامی است';
+            else if (v.name.length < 2) errors.name = 'نام باید حداقل ۲ حرف باشد';
+            else if (v.name.length > 60) errors.name = 'نام بیش از حد طولانی است';
 
-        const res = await fetch('/api/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify(body),
-        });
+            // username
+            if (!v.username) {
+                errors.username = 'نام کاربری الزامی است';
+            } else if (v.username.includes('@')) {
+                errors.username = 'نام کاربری نمی‌تواند شامل @ باشد';
+            } else if (/\s/.test(v.username)) {
+                errors.username = 'نام کاربری نمی‌تواند شامل فاصله باشد';
+            } else if (v.username.length < 3) {
+                errors.username = 'نام کاربری باید حداقل ۳ کاراکتر باشد';
+            } else if (v.username.length > 20) {
+                errors.username = 'نام کاربری باید حداکثر ۲۰ کاراکتر باشد';
+            } else if (!RE.username.test(v.username)) {
+                errors.username = 'نام کاربری فقط می‌تواند شامل حروف انگلیسی، عدد، _ ، . یا - باشد';
+            }
 
-        const data = await res.json();
+            // email
+            if (!v.email) errors.email = 'ایمیل الزامی است';
+            else if (!RE.email.test(v.email)) errors.email = 'ایمیل نامعتبر است';
 
-        if (!res.ok) {
-            const msg = data.details
-                ? Object.values(data.details).flat().join(' • ')
-                : data.message;
-            openDialogError('خطا', msg || 'ثبت نام ناموفق بود');
-            return;
-        }
+            // password
+            if (!v.password) errors.password = 'رمز عبور الزامی است';
+            else if (v.password.length < 6) errors.password = 'رمز عبور باید حداقل ۶ کاراکتر باشد';
+            else if (!RE.password.test(v.password)) errors.password = 'رمز عبور باید شامل حرف و عدد باشد';
 
-        window.location.href = '/';
-    } catch {
-        openDialogError('خطا', 'اتصال به سرور برقرار نشد');
-    } finally {
-        btn.disabled = false;
-        btn.textContent = originalText;
-    }
+            // confirm
+            if (!v.confirmPassword) errors.confirmPassword = 'تکرار رمز عبور الزامی است';
+            else if (v.password !== v.confirmPassword) errors.confirmPassword = 'رمز عبور و تکرار آن یکسان نیستند';
+
+            // terms
+            if (!v.terms) errors.terms = 'پذیرش قوانین الزامی است';
+
+            return errors;
+        },
+
+        /* ---------------- ارسال ---------------- */
+        submit(v) {
+            return FormKit.postJSON('/api/auth/register', {
+                name: v.name,
+                username: v.username,
+                email: v.email,
+                password: v.password,
+                confirmPassword: v.confirmPassword,
+                terms: !!v.terms,
+            });
+        },
+
+        /* ---------------- success ---------------- */
+        onSuccess() {
+            toast('حساب شما با موفقیت ساخته شد 🎉', 'success');
+            setTimeout(() => (location.href = '/'), 700);
+        },
+
+        /* ---------------- extra: log payload برای دیباگ ---------------- */
+        onError(payload) {
+            if (location.hostname === 'localhost') {
+                console.debug('[register error]', payload);
+            }
+        },
+    });
 });
 
 /**
