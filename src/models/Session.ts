@@ -143,9 +143,9 @@ const clientSchema = new Schema<IClientIdentifiers>(
 /* ---------------- session schema ---------------- */
 const sessionSchema = new Schema<ISession, SessionModel, ISessionMethods>(
     {
-        sessionId: { type: String, required: true, unique: true, index: true },
-        user: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
-        token: { type: String, required: true, unique: true, index: true },
+        sessionId: { type: String, required: true, unique: true },
+        user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+        token: { type: String, required: true, unique: true },
         refreshToken: { type: String, select: false },
 
         device: { type: deviceSchema, required: true },
@@ -154,9 +154,9 @@ const sessionSchema = new Schema<ISession, SessionModel, ISessionMethods>(
 
         loginAt: { type: Date, default: () => new Date() },
         lastActiveAt: { type: Date, default: () => new Date() },
-        expiresAt: { type: Date, required: true, index: true },
+        expiresAt: { type: Date, required: true },
 
-        revoked: { type: Boolean, default: false, index: true },
+        revoked: { type: Boolean, default: false },
         revokedAt: { type: Date, default: null },
         revokedReason: String,
     },
