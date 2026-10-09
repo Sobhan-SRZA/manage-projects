@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/styles/index.css">
   <link rel="stylesheet" href="/styles/auth.css">
+  <link rel="stylesheet" href="/styles/form-errors.css">
   <title>ورود</title>
 </head>
 
@@ -59,6 +60,45 @@
   </section>
 </body>
 
-<script src="/js/auth/login.js"></script>
+<!-- <script src="/js/auth/login.js"></script> -->
+<script src="/js/form-errors.js"></script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    FormKit.attach('#loginForm', {
+      // --- اعتبارسنجی سمت کلاینت ---
+      validate(values) {
+        const errors = {};
+
+        if (!values.identifier) {
+          errors.identifier = 'ایمیل یا نام کاربری الزامی است';
+        } else if (values.identifier.length < 3) {
+          errors.identifier = 'حداقل ۳ کاراکتر وارد کنید';
+        }
+
+        if (!values.password) {
+          errors.password = 'رمز عبور الزامی است';
+        } else if (values.password.length < 6) {
+          errors.password = 'رمز عبور باید حداقل ۶ کاراکتر باشد';
+        }
+
+        return errors;
+      },
+
+      // --- ارسال به سرور ---
+      submit(values) {
+        return FormKit.postJSON('/api/auth/login', {
+          identifier: values.identifier,
+          password: values.password,
+          remember: !!values.remember,
+        });
+      },
+
+      onSuccess() {
+        location.href = '/';
+      },
+    });
+  });
+</script>
 
 </html>
