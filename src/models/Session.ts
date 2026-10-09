@@ -60,6 +60,7 @@ export interface IClientIdentifiers {
    Main: Session
    ------------------------------------------------------------------ */
 export interface ISession {
+    sessionId: string;            // stable random id
     user: Types.ObjectId;         // ref → User
     token: string;                // JWT (or a random session id)
     refreshToken?: string;
@@ -142,6 +143,7 @@ const clientSchema = new Schema<IClientIdentifiers>(
 /* ---------------- session schema ---------------- */
 const sessionSchema = new Schema<ISession, SessionModel, ISessionMethods>(
     {
+        sessionId: { type: String, required: true, unique: true, index: true },
         user: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
         token: { type: String, required: true, unique: true, index: true },
         refreshToken: { type: String, select: false },
@@ -183,7 +185,7 @@ sessionSchema.method("isActive", function () {
 
 sessionSchema.method("touch", async function () {
     this.lastActiveAt = new Date();
-    
+
     await this.save();
 });
 
