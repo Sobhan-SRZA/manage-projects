@@ -5,8 +5,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/styles/index.css">
-  <link rel="stylesheet" href="/styles/auth.css">
   <link rel="stylesheet" href="/styles/form-errors.css">
+  <link rel="stylesheet" href="/styles/auth.css">
   <title>ثبت نام</title>
 </head>
 
@@ -81,65 +81,7 @@
   </section>
 </body>
 
-<!-- <script src="/js/auth/register.js"></script> -->
+<script src="/js/auth/register.js"></script>
 <script src="/js/form-errors.js"></script>
-
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    FormKit.attach('#registerForm', {
-      validate(values) {
-        const errors = {};
-
-        if (!values.name || values.name.trim().length < 2) {
-          errors.name = 'نام باید حداقل ۲ حرف باشد';
-        }
-
-        if (!values.username) {
-          errors.username = 'نام کاربری الزامی است';
-        } else if (!/^[a-zA-Z0-9_.-]{3,20}$/.test(values.username)) {
-          errors.username = '۳ تا ۲۰ کاراکتر، فقط حروف، عدد، _ ، . یا -';
-        }
-
-        if (!values.email) {
-          errors.email = 'ایمیل الزامی است';
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
-          errors.email = 'ایمیل نامعتبر است';
-        }
-
-        if (!values.password) {
-          errors.password = 'رمز عبور الزامی است';
-        } else if (values.password.length < 6) {
-          errors.password = 'رمز عبور باید حداقل ۶ کاراکتر باشد';
-        }
-
-        if (values.password !== values.confirmPassword) {
-          errors.confirmPassword = 'رمز عبور و تکرار آن یکسان نیستند';
-        }
-
-        if (!values.terms) {
-          errors.terms = 'پذیرش قوانین الزامی است';
-        }
-
-        return errors;
-      },
-
-      submit(values) {
-        return FormKit.postJSON('/api/auth/register', {
-          name: values.name,
-          username: values.username,
-          email: values.email,
-          password: values.password,
-          confirmPassword: values.confirmPassword,
-          terms: !!values.terms,
-        });
-      },
-
-      onSuccess() {
-        toast('حساب شما با موفقیت ساخته شد 🎉', 'success');
-        setTimeout(() => (location.href = '/'), 800);
-      },
-    });
-  });
-</script>
 
 </html>
