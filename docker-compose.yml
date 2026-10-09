@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: project_manager
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+
+  mongo-express:
+    image: mongo-express:1.0.2
+    container_name: project_manager_mongo_ui
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/
+      ME_CONFIG_BASICAUTH: "false"
+
+volumes:
+  mongodata:
