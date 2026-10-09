@@ -5,34 +5,41 @@ import {
     randomToken,
 } from "../utils/token";
 import {
-    registerSchema,
-    loginSchema
-} from "../validators/authValidator";
+    AppError,
+    Conflict,
+    Unauthorized
+} from "../utils/AppError";
 import type {
     Request,
     Response
 } from "express";
+import {
+    ErrorCodes,
+    ErrorMessages
+} from "../utils/errorCodes";
+import {
+    registerSchema,
+    loginSchema
+} from "../validators/authValidator";
 import { createSession } from "../services/sessionService";
 import { asyncHandler } from "../utils/asyncHandler";
 import { validate } from "../utils/validate";
-import { AppError } from "../utils/AppError";
 import { Session } from "../models/Session";
 import { User } from "../models/User";
 
-/* ------------------------------------------------------------------
+/* ==================================================================
    Helpers
-   ------------------------------------------------------------------ */
+   ================================================================== */
 const cookieOpts = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax" as const,
-    path: "/"
+    path: "/",
 };
 
 function setAuthCookies(res: Response, access: string, refresh: string, remember: boolean) {
-    const accessMaxAge = remember ? 7 * 24 * 60 * 60 * 1000 : 60 * 60 * 1000; // 7d or 1h
-    const refreshMaxAge = 30 * 24 * 60 * 60 * 1000; // 30d
-
+    const accessMaxAge = remember ? 7 * 24 * 60 * 60 * 1000 : 60 * 60 * 1000;
+    const refreshMaxAge = 30 * 24 * 60 * 60 * 1000;
     res.cookie("access_token", access, { ...cookieOpts, maxAge: accessMaxAge });
     res.cookie("refresh_token", refresh, { ...cookieOpts, maxAge: refreshMaxAge });
 }
@@ -42,117 +49,164 @@ function clearAuthCookies(res: Response) {
     res.clearCookie("refresh_token", cookieOpts);
 }
 
+function publicUser(u: any) {
+    return {
+        id: u._id,
+        name: u.name,
+        username: u.username,
+        email: u.email,
+        createdAt: u.createdAt,
+    };
+}
+
 /* ==================================================================
    REGISTER
    ================================================================== */
 export const register = asyncHandler(async (req: Request, res: Response) => {
     const data = validate(registerSchema, req.body);
 
-    // check duplicates (case-insensitive email, exact username)
-    const existing = await User.findOne({
-        $or: [{ email: data.email }, { username: data.username }],
-    }).lean();
+    const usernameLower = data.username.toLowerCase();
+    const emailLower = data.email.toLowerCase();
 
-    if (existing) {
-        const field = existing.email === data.email ? "email" : "username";
-        throw new AppError(409,
-            field === "email"
-                ? "EMAIL_TAKEN"
-                : "USERNAME_TAKEN",
-                
-            field === "email"
-                ? "این ایمیل قبلاً ثبت شده است"
-                : "این نام کاربری قبلاً گرفته شده است",
-            { field });
+    /* -------- چک تکراری بودن به صورت case-insensitive -------- */
+    const [existingUsername, existingEmail] = await Promise.all([
+        User.findOne({ usernameLower }).lean(),
+        User.findOne({ email: emailLower }).lean(),
+    ]);
+
+    if (existingUsername) {
+        throw Conflict(
+            ErrorCodes.USERNAME_TAKEN,
+            ErrorMessages[ErrorCodes.USERNAME_TAKEN],
+            { field: "username" }
+        );
     }
 
-    // create user (password hashed by pre-save hook)
-    const user = await User.create({
-        name: data.name,
-        username: data.username,
-        email: data.email,
-        password: data.password
-    });
+    if (existingEmail) {
+        throw Conflict(
+            ErrorCodes.EMAIL_TAKEN,
+            ErrorMessages[ErrorCodes.EMAIL_TAKEN],
+            { field: "email" }
+        );
+    }
 
-    // generate tokens — need a sessionId first, so create sessionId now
+    /* -------- ساخت کاربر -------- */
+    let user;
+    try {
+        user = await User.create({
+            name: data.name,
+            username: data.username,
+            usernameLower,
+            email: emailLower,
+            password: data.password,
+        });
+    }
+
+    catch (err: any) {
+        // race condition: دو تا request همزمان
+        if (err?.code === 11000) {
+            const dupField = Object.keys(err.keyPattern || {})[0] || "";
+            if (dupField === "usernameLower" || dupField === "username") {
+                throw Conflict(ErrorCodes.USERNAME_TAKEN, undefined, { field: "username" });
+            }
+            if (dupField === "email") {
+                throw Conflict(ErrorCodes.EMAIL_TAKEN, undefined, { field: "email" });
+            }
+        }
+        throw err;
+    }
+
+    /* -------- توکن‌ها + سشن -------- */
     const sessionId = randomToken(16);
     const access = signAccessToken({ sub: user._id.toString(), sid: sessionId });
     const refresh = signRefreshToken({ sub: user._id.toString(), sid: sessionId });
 
-    // create Session doc with device + location info
-    await createSession({
-        sessionId,
-        userId: user._id,
-        token: access,
-        refreshToken: refresh,
-        req,
-        ttlDays: 7
-    });
+    try {
+        await createSession({
+            userId: user._id,
+            sessionId,
+            token: access,
+            refreshToken: refresh,
+            req,
+            ttlDays: 7,
+        });
+    }
+
+    catch (err) {
+        // اگه سشن ساخته نشد، کاربر رو پاک کن که دیتابیس تمیز بمونه
+        await User.deleteOne({ _id: user._id }).catch(() => { });
+        throw err;
+    }
 
     setAuthCookies(res, access, refresh, true);
 
     res.status(201).json({
         ok: true,
-        user: {
-            id: user._id,
-            name: user.name,
-            username: user.username,
-            email: user.email
-        }
+        message: "حساب با موفقیت ساخته شد",
+        user: publicUser(user),
     });
 });
 
 /* ==================================================================
-   LOGIN  (email OR username)
+   LOGIN  (email OR username, case-insensitive)
    ================================================================== */
 export const login = asyncHandler(async (req: Request, res: Response) => {
     const data = validate(loginSchema, req.body);
 
-    const identifier = data.identifier.toLowerCase();
+    const raw = data.identifier.trim();
+    const emailLower = raw.toLowerCase();
+    const usernameLower = raw.toLowerCase();
 
     const user = await User.findOne({
-        $or: [{ email: identifier }, { username: data.identifier }],
+        $or: [
+            { email: emailLower },
+            { usernameLower },
+        ],
     }).select("+password");
 
+    /* -------- کاربر پیدا نشد -------- */
     if (!user) {
-        // do not reveal which field is wrong
-        throw new AppError(401, "INVALID_CREDENTIALS", "ایمیل/نام کاربری یا رمز عبور اشتباه است");
+        // پیام یکسان برای جلوگیری از user-enumeration
+        throw Unauthorized(
+            ErrorCodes.INVALID_CREDENTIALS,
+            ErrorMessages[ErrorCodes.INVALID_CREDENTIALS]
+        );
     }
 
+    /* -------- پسورد چک -------- */
     const ok = await user.comparePassword(data.password);
     if (!ok) {
-        throw new AppError(401, "INVALID_CREDENTIALS", "ایمیل/نام کاربری یا رمز عبور اشتباه است");
+        throw Unauthorized(
+            ErrorCodes.INVALID_CREDENTIALS,
+            ErrorMessages[ErrorCodes.INVALID_CREDENTIALS]
+        );
     }
 
-    // create session
+    /* -------- توکن‌ها + سشن -------- */
     const sessionId = randomToken(16);
     const access = signAccessToken({ sub: user._id.toString(), sid: sessionId });
     const refresh = signRefreshToken({ sub: user._id.toString(), sid: sessionId });
 
     await createSession({
-        sessionId,
         userId: user._id,
+        sessionId,
         token: access,
         refreshToken: refresh,
         req,
-        ttlDays: data.remember ? 30 : 7
+        ttlDays: data.remember ? 30 : 7,
     });
 
     setAuthCookies(res, access, refresh, !!data.remember);
 
     res.json({
         ok: true,
-        user: {
-            id: user._id,
-            name: user.name,
-            username: user.username,
-            email: user.email
-        }
+        message: "ورود موفق",
+        user: publicUser(user),
     });
 });
 
 /* ==================================================================
-   LOGOUT  (current session only)
+   LOGOUT
    ================================================================== */
 export const logout = asyncHandler(async (req: Request, res: Response) => {
     const refresh = req.cookies?.refresh_token as string | undefined;
@@ -164,23 +218,20 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
                 { sessionId: payload.sid, revoked: false },
                 { revoked: true, revokedAt: new Date(), revokedReason: "user_logout" }
             );
-        }
-
-        catch {
-            /* ignore expired/invalid refresh token */
+        } catch {
+            /* ignore */
         }
     }
 
     clearAuthCookies(res);
-    res.json({ ok: true });
+    res.json({ ok: true, message: "خروج انجام شد" });
 });
 
 /* ==================================================================
-   LOGOUT ALL  (all sessions of current user)
+   LOGOUT ALL
    ================================================================== */
 export const logoutAll = asyncHandler(async (req: any, res: Response) => {
-    if (!req.user)
-        throw new AppError(401, "UNAUTHENTICATED", "ابتدا وارد شوید");
+    if (!req.user) throw Unauthorized(ErrorCodes.UNAUTHENTICATED);
 
     await Session.updateMany(
         { user: req.user._id, revoked: false },
@@ -188,26 +239,18 @@ export const logoutAll = asyncHandler(async (req: any, res: Response) => {
     );
 
     clearAuthCookies(res);
-    res.json({ ok: true });
+    res.json({ ok: true, message: "از همه دستگاه‌ها خارج شدید" });
 });
 
 /* ==================================================================
-   ME  (return current user)
+   ME
    ================================================================== */
 export const me = asyncHandler(async (req: any, res: Response) => {
-    if (!req.user)
-        throw new AppError(401, "UNAUTHENTICATED", "ابتدا وارد شوید");
+    if (!req.user) throw Unauthorized(ErrorCodes.UNAUTHENTICATED);
 
     res.json({
         ok: true,
-        user: {
-            id: req.user._id,
-            createdAt: req.user.createdAt,
-            name: req.user.name,
-            username: req.user.username,
-            email: req.user.email
-        },
-
+        user: publicUser(req.user),
         session: req.session
             ? {
                 id: req.session._id,
@@ -217,34 +260,28 @@ export const me = asyncHandler(async (req: any, res: Response) => {
                 location: {
                     ip: req.session.location.ip,
                     city: req.session.location.city,
-                    country: req.session.location.country
-                }
+                    country: req.session.location.country,
+                },
             }
-            : null
+            : null,
     });
 });
 
 /* ==================================================================
-   REFRESH  (rotate access token using refresh token)
+   REFRESH
    ================================================================== */
 export const refresh = asyncHandler(async (req: Request, res: Response) => {
     const refreshToken = req.cookies?.refresh_token as string | undefined;
-    if (!refreshToken) {
-        throw new AppError(401, "NO_REFRESH_TOKEN", "توکن refresh موجود نیست");
-    }
+    if (!refreshToken) throw Unauthorized(ErrorCodes.NO_REFRESH_TOKEN);
 
     let payload;
     try {
         payload = verifyToken(refreshToken);
+    } catch {
+        throw Unauthorized(ErrorCodes.INVALID_REFRESH_TOKEN);
     }
 
-    catch {
-        throw new AppError(401, "INVALID_REFRESH_TOKEN", "توکن refresh نامعتبر یا منقضی است");
-    }
-
-    if (payload.typ !== "refresh") {
-        throw new AppError(401, "WRONG_TOKEN_TYPE", "نوع توکن اشتباه است");
-    }
+    if (payload.typ !== "refresh") throw Unauthorized(ErrorCodes.WRONG_TOKEN_TYPE);
 
     const session = await Session.findOne({
         sessionId: payload.sid,
@@ -252,14 +289,10 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
         revoked: false,
     });
 
-    if (!session || session.expiresAt < new Date()) {
-        throw new AppError(401, "SESSION_EXPIRED", "سشن منقضی شده است");
-    }
+    if (!session) throw Unauthorized(ErrorCodes.SESSION_NOT_FOUND);
+    if (session.expiresAt < new Date()) throw Unauthorized(ErrorCodes.SESSION_EXPIRED);
 
-    // rotate: issue new access token (keep same sessionId)
     const access = signAccessToken({ sub: payload.sub, sid: payload.sid });
-
-    // update token in DB
     session.token = access;
     session.lastActiveAt = new Date();
     await session.save();
@@ -269,15 +302,15 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
 });
 
 /* ==================================================================
-   SESSIONS  (list active sessions of current user)
+   LIST SESSIONS
    ================================================================== */
 export const listSessions = asyncHandler(async (req: any, res: Response) => {
-    if (!req.user) throw new AppError(401, "UNAUTHENTICATED", "ابتدا وارد شوید");
+    if (!req.user) throw Unauthorized(ErrorCodes.UNAUTHENTICATED);
 
     const sessions = await Session.find({
         user: req.user._id,
         revoked: false,
-        expiresAt: { $gt: new Date() }
+        expiresAt: { $gt: new Date() },
     })
         .sort({ lastActiveAt: -1 })
         .lean();
@@ -295,39 +328,38 @@ export const listSessions = asyncHandler(async (req: any, res: Response) => {
                 ip: s.location.ip,
                 city: s.location.city,
                 country: s.location.country,
-                isp: s.location.isp
-            }
-        }))
+                isp: s.location.isp,
+            },
+        })),
     });
 });
 
 /* ==================================================================
-   REVOKE  (revoke a specific session by id)
+   REVOKE SESSION
    ================================================================== */
 export const revokeSession = asyncHandler(async (req: any, res: Response) => {
-    if (!req.user)
-        throw new AppError(401, "UNAUTHENTICATED", "ابتدا وارد شوید");
+    if (!req.user) throw Unauthorized(ErrorCodes.UNAUTHENTICATED);
 
     const session = await Session.findOne({
         _id: req.params.id,
         user: req.user._id,
-        revoked: false
+        revoked: false,
     });
 
-    if (!session)
-        throw new AppError(404, "SESSION_NOT_FOUND", "سشن پیدا نشد");
+    if (!session) {
+        throw new AppError(404, ErrorCodes.SESSION_NOT_FOUND);
+    }
 
     session.revoked = true;
     session.revokedAt = new Date();
     session.revokedReason = "user_revoked";
     await session.save();
 
-    // if user revoked their own current session, clear cookies
     if (req.session && String(req.session._id) === String(session._id)) {
         clearAuthCookies(res);
     }
 
-    res.json({ ok: true });
+    res.json({ ok: true, message: "سشن بسته شد" });
 });
 
 /**
