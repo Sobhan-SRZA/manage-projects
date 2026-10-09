@@ -1,9 +1,14 @@
+import {
+    AppError,
+    NotFound,
+    Unauthorized
+} from "../utils/AppError";
 import type {
     Response,
     NextFunction
 } from "express";
 import { verifyToken } from "../utils/token";
-import { AppError } from "../utils/AppError";
+import { ErrorCodes } from "../utils/errorCodes";
 import { Session } from "../models/Session";
 import { User } from "../models/User";
 
@@ -36,15 +41,15 @@ export async function requireAuth(req: any, _res: Response, next: NextFunction) 
         });
 
         if (!session)
-            throw new AppError(401, "SESSION_NOT_FOUND", "سشن یافت نشد");
+            throw Unauthorized(ErrorCodes.SESSION_NOT_FOUND, "SESSION_NOT_FOUND", "سشن یافت نشد");
 
         if (session.expiresAt < new Date()) {
-            throw new AppError(401, "SESSION_EXPIRED", "سشن منقضی شده است");
+            throw Unauthorized(ErrorCodes.SESSION_EXPIRED, "SESSION_EXPIRED", "سشن منقضی شده است");
         }
 
         const user = await User.findById(payload.sub).lean();
         if (!user)
-            throw new AppError(401, "USER_NOT_FOUND", "کاربر یافت نشد");
+            throw NotFound(ErrorCodes.ACCOUNT_NOT_FOUND, "USER_NOT_FOUND", "کاربر یافت نشد");
 
         req.user = user;
         req.session = session;
