@@ -1,58 +1,18 @@
-import loadRoutes from "./lib/loader";
-import express from "express";
-import dotenv from "dotenv";
-import path from "path";
+import app from "./app";
+import { connectDB } from "./config/db";
+import { config } from "./config/env";
 
-dotenv.config();
+const startServer = async () => {
+    // Connect to the database first
+    await connectDB();
 
-const port = 8888;
-const app = express();
-
-app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "../src/views"));
-
-app.use(express.json());
-
-app.use(
-    express.static(
-        path.join(__dirname, "../src/public")
-    )
-);
-
-const routes = [
-    {
-        dir: "pages",
-        prefix: ""
-    },
-    {
-        dir: "api",
-        prefix: "/api"
-    }
-];
-
-Promise.all(
-    routes.map(async route => {
-        await loadRoutes(
-            app,
-            path.join(__dirname, route.dir),
-            route.prefix
-        );
-    })
-)
-
-// Redirect all invalid URLs to /404
-setTimeout(() => {
-    app.use((req, res) => {
-        res.redirect("/api/404");
+    // Then start the Express server
+    app.listen(config.port, () => {
+        console.log(`Server running on http://localhost:${config.port}`);
     });
-}, 1000);
+};
 
-app.listen(port, () => {
-    console.log(
-        "App started:",
-        `http://localhost:${port}`
-    );
-});
+startServer();
 
 /**
  * Copyright (c) 2026 Sobhan Rasoulzadeh Asl (Sobhan-SRZA / Mr. Sinre)
