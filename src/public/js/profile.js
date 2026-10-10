@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         sessionsList: document.getElementById('sessionsList'),
 
-        logoutBtn: document.getElementById('logoutBtn'),
+        logoutBtn: document.getElementById('logoutSessionBtn'),
         logoutAllBtn: document.getElementById('logoutAllBtn'),
     };
 
@@ -242,18 +242,23 @@ document.addEventListener('DOMContentLoaded', () => {
             cancelText: 'انصراف',
             danger: true,
         });
-        if (!ok) return;
+
+        if (!ok)
+            return;
 
         btn.disabled = true;
         try {
             await FormKit.postJSON(`/api/auth/sessions/${id}`, {}, { method: 'DELETE' });
             toast('از این دستگاه خارج شدید', 'success');
             await loadSessions();
-        } catch (err) {
+        }
+
+        catch (err) {
             if (err.code === 'SESSION_EXPIRED' || err.code === 'UNAUTHENTICATED') {
                 location.href = '/login';
                 return;
             }
+
             toast(err.message || 'خروج ناموفق بود', 'error');
             btn.disabled = false;
         }
@@ -267,9 +272,10 @@ document.addEventListener('DOMContentLoaded', () => {
             confirmText: 'بله، سشن را ببند',
             danger: true
         });
-        if (!ok) return;
 
-        btn.disabled = true;
+        if (!ok)
+            return;
+
         try {
             await FormKit.postJSON('/api/auth/logout', {});
             window.location.href = '/';
@@ -287,12 +293,16 @@ document.addEventListener('DOMContentLoaded', () => {
             confirmText: 'بله، همه را ببند',
             danger: true,
         });
-        if (!ok) return;
+
+        if (!ok)
+            return;
 
         try {
             await FormKit.postJSON('/api/auth/logout-all', {});
             window.location.href = '/';
-        } catch (err) {
+        }
+
+        catch (err) {
             toast(err.message || 'خطا در خروج', 'error');
         }
     }
