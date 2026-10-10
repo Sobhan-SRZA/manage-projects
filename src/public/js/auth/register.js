@@ -17,44 +17,71 @@ document.addEventListener('DOMContentLoaded', () => {
     FormKit.attach(form, {
         /* ---------------- اعتبارسنجی سمت کلاینت ---------------- */
         validate(v) {
+            console.log("🚀 ~ v:", v)
             const errors = {};
 
             // name
-            if (!v.name) errors.name = 'نام الزامی است';
-            else if (v.name.length < 2) errors.name = 'نام باید حداقل ۲ حرف باشد';
-            else if (v.name.length > 60) errors.name = 'نام بیش از حد طولانی است';
+            if (!v.name)
+                errors.name = 'نام الزامی است';
+            else if (v.name.length < 2)
+                errors.name = 'نام باید حداقل ۲ حرف باشد';
+            else if (v.name.length > 60)
+                errors.name = 'نام بیش از حد طولانی است';
 
             // username
             if (!v.username) {
                 errors.username = 'نام کاربری الزامی است';
-            } else if (v.username.includes('@')) {
+            }
+            else if (v.username.includes('@')) {
                 errors.username = 'نام کاربری نمی‌تواند شامل @ باشد';
-            } else if (/\s/.test(v.username)) {
+            }
+            else if (/\s/.test(v.username)) {
                 errors.username = 'نام کاربری نمی‌تواند شامل فاصله باشد';
-            } else if (v.username.length < 3) {
+            }
+            else if (v.username.length < 3) {
                 errors.username = 'نام کاربری باید حداقل ۳ کاراکتر باشد';
-            } else if (v.username.length > 20) {
+            }
+            else if (v.username.length > 20) {
                 errors.username = 'نام کاربری باید حداکثر ۲۰ کاراکتر باشد';
-            } else if (!RE.username.test(v.username)) {
+            }
+            else if (!RE.username.test(v.username)) {
                 errors.username = 'نام کاربری فقط می‌تواند شامل حروف انگلیسی، عدد، _ ، . یا - باشد';
             }
 
             // email
-            if (!v.email) errors.email = 'ایمیل الزامی است';
-            else if (!RE.email.test(v.email)) errors.email = 'ایمیل نامعتبر است';
+            if (!v.email) {
+                errors.email = 'ایمیل الزامی است';
+            }
+            else if (!RE.email.test(v.email)) {
+                errors.email = 'ایمیل نامعتبر است';
+            }
 
             // password
-            if (!v.password) errors.password = 'رمز عبور الزامی است';
-            else if (v.password.length < 6) errors.password = 'رمز عبور باید حداقل ۶ کاراکتر باشد';
-            else if (!RE.password.test(v.password)) errors.password = 'رمز عبور باید شامل حرف و عدد باشد';
+            if (!v.password) {
+                errors.password = 'رمز عبور الزامی است';
+            }
+            else if (v.password.length < 6) {
+                errors.password = 'رمز عبور باید حداقل ۶ کاراکتر باشد';
+            }
+
+            else if (!RE.password.test(v.password)) {
+                errors.password = 'رمز عبور باید شامل حرف و عدد باشد';
+            }
 
             // confirm
-            if (!v.confirmPassword) errors.confirmPassword = 'تکرار رمز عبور الزامی است';
-            else if (v.password !== v.confirmPassword) errors.confirmPassword = 'رمز عبور و تکرار آن یکسان نیستند';
+            if (!v.confirmPassword) {
+                errors.confirmPassword = 'تکرار رمز عبور الزامی است';
+            }
+            else if (v.password !== v.confirmPassword) {
+                errors.confirmPassword = 'رمز عبور و تکرار آن یکسان نیستند';
+            }
 
             // terms
-            if (!v.terms) errors.terms = 'پذیرش قوانین الزامی است';
-
+            if (!v.terms) {
+                errors.terms = 'پذیرش قوانین الزامی است';
+            }
+            
+            console.log("🚀 ~ errors:", errors)
             return errors;
         },
 
@@ -66,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 email: v.email,
                 password: v.password,
                 confirmPassword: v.confirmPassword,
-                terms: !!v.terms,
+                terms: !!v.terms
             });
         },
 
