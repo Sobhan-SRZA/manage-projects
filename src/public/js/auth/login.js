@@ -13,15 +13,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!v.identifier) {
                 errors.identifier = 'ایمیل یا نام کاربری الزامی است';
-            } else if (v.identifier.length < 3) {
+            } 
+            
+            else if (v.identifier.length < 3) {
                 errors.identifier = 'حداقل ۳ کاراکتر وارد کنید';
-            } else if (v.identifier.length > 254) {
+            } 
+            
+            else if (v.identifier.length > 254) {
                 errors.identifier = 'مقدار وارد شده خیلی طولانی است';
             }
 
             if (!v.password) {
                 errors.password = 'رمز عبور الزامی است';
-            } else if (v.password.length < 6) {
+            } 
+            
+            else if (v.password.length < 6) {
                 errors.password = 'رمز عبور باید حداقل ۶ کاراکتر باشد';
             }
 
@@ -33,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return FormKit.postJSON('/api/auth/login', {
                 identifier: v.identifier,
                 password: v.password,
-                remember: !!v.remember,
+                remember: !!v.remember
             });
         },
 
@@ -53,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const pw = form.querySelector('[name="password"]');
                 if (pw) pw.select?.();
             }
-        },
+        }
     });
 });
 
